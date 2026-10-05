@@ -1,0 +1,1210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>JIM JIM KIM KIM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@400;600;800&display=swap">
+<style>
+/* =========================================================
+   DESIGN TOKENS
+   Layout: a fixed 3D stage behind transparent "story" sections;
+   solid candy-coloured sections slide over it like toy-box lids.
+   Single light theme on purpose (toy-shop cream), colours set explicitly.
+   ========================================================= */
+:root {
+  color-scheme: light;
+  --cream: #FFF8EF;
+  --cream-2: #FCEBD6;
+  --ink: #2B2240;
+  --ink-soft: #5E5470;
+  --tomato: #F0533A;
+  --sun: #FFC83D;
+  --sky: #3FA7F5;
+  --mint: #52D6A6;
+  --pink: #FF8FB1;
+  --card: #FFFFFF;
+  --font-display: "Baloo 2", "Fredoka", "Arial Rounded MT Bold", system-ui, sans-serif;
+  --font-body: "Nunito", "Segoe UI", system-ui, sans-serif;
+  --radius: 28px;
+  --shadow: 0 18px 40px -18px rgba(43, 34, 64, .35);
+  --bounce: cubic-bezier(.34, 1.56, .64, 1); /* ease-out-back */
+  --gutter: clamp(16px, 4vw, 48px);
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0; background: var(--cream); color: var(--ink);
+  font-family: var(--font-body); font-size: 18px; line-height: 1.6;
+  overflow-x: hidden;
+}
+h1, h2, h3 { font-family: var(--font-display); line-height: .95; margin: 0; text-wrap: balance; letter-spacing: -.01em; }
+p { margin: 0; }
+a { color: inherit; }
+:focus-visible { outline: 4px solid var(--sky); outline-offset: 4px; border-radius: 12px; }
+.wrap { max-width: 1240px; margin: 0 auto; padding-inline: var(--gutter); }
+.eyebrow { font-weight: 800; font-size: 14px; letter-spacing: .14em; text-transform: uppercase; color: var(--tomato); }
+
+/* Skip link */
+.skip { position: fixed; top: -100px; left: 16px; z-index: 100; background: var(--ink); color: var(--cream); padding: 12px 20px; border-radius: 999px; font-weight: 800; text-decoration: none; }
+.skip:focus { top: calc(16px + env(safe-area-inset-top, 0px)); }
+
+/* =========================================================
+   1. PRELOADER
+   ========================================================= */
+.preloader {
+  position: fixed; inset: 0; z-index: 90; background: var(--tomato); color: var(--cream);
+  display: grid; place-items: center; transition: transform .9s cubic-bezier(.76, 0, .24, 1);
+}
+.preloader.done { transform: translateY(-101%); }
+.preloader .count { font-family: var(--font-display); font-weight: 800; font-size: clamp(96px, 22vw, 280px); line-height: 1; font-variant-numeric: tabular-nums; }
+.preloader small { display: block; text-align: center; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+/* three toy silhouettes that "wake up" as each model finishes loading */
+.loader-toys { display: flex; justify-content: center; gap: 20px; margin-bottom: 8px; }
+.lt { width: 72px; height: 72px; opacity: .3; transform: scale(.85); transition: opacity .4s, transform .6s var(--bounce); }
+.lt svg { width: 100%; height: 100%; }
+.lt.awake { opacity: 1; transform: scale(1.1) translateY(-6px); }
+
+/* =========================================================
+   3D STAGE (fixed canvas)
+   ========================================================= */
+#stage { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; display: block; }
+main, footer { position: relative; }
+.solid { position: relative; z-index: 3; } /* sections that cover the canvas */
+.float { position: relative; z-index: 2; }  /* content that sits over the canvas */
+
+/* =========================================================
+   2. HERO
+   ========================================================= */
+.hero { position: relative; min-height: 100svh; display: grid; grid-template-rows: auto 1fr auto; padding-block: 24px 32px; overflow: hidden; }
+.nav { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.logo { font-family: var(--font-display); font-weight: 800; font-size: 22px; text-decoration: none; }
+.logo span { color: var(--tomato); }
+.toy-tabs { display: flex; gap: 8px; background: var(--card); padding: 6px; border-radius: 999px; box-shadow: var(--shadow); flex-wrap: wrap; }
+.toy-tabs button {
+  font: 800 15px var(--font-body); border: 0; background: transparent; color: var(--ink);
+  padding: 8px 16px; border-radius: 999px; cursor: pointer; transition: background .3s, transform .3s var(--bounce);
+}
+.toy-tabs button:hover { transform: translateY(-2px); }
+.toy-tabs button[aria-pressed="true"] { background: var(--ink); color: var(--cream); }
+.nav-right { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.sound-btn {
+  font: 800 15px var(--font-body); border: 3px solid var(--ink); background: var(--card); color: var(--ink);
+  padding: 7px 14px; border-radius: 999px; cursor: pointer; transition: transform .3s var(--bounce);
+}
+.sound-btn:hover { transform: translateY(-2px); }
+.sound-btn[aria-pressed="true"] { background: var(--sun); }
+.hero-name {
+  position: absolute; inset: 0; z-index: 0; display: grid; place-items: center; pointer-events: none;
+  font-family: var(--font-display); font-weight: 800; text-align: center; line-height: .8;
+  font-size: clamp(64px, 15vw, 230px); color: var(--sun); opacity: .9;
+}
+.hero-name span { display: block; }
+.hero-name span:nth-child(2) { color: var(--sky); }
+.hero-bottom { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; flex-wrap: wrap; }
+.hero-bottom .story { max-width: 30ch; font-size: 20px; font-weight: 600; }
+.hero-bottom .story strong { display: block; font-family: var(--font-display); font-size: 30px; line-height: 1.05; margin-bottom: 6px; }
+.scroll-hint { display: flex; align-items: center; gap: 12px; font-weight: 800; }
+.scroll-hint i { width: 28px; height: 44px; border: 3px solid var(--ink); border-radius: 20px; position: relative; }
+.scroll-hint i::after { content: ""; position: absolute; left: 50%; top: 8px; width: 6px; height: 8px; margin-left: -3px; background: var(--tomato); border-radius: 3px; animation: wheel 1.6s infinite; }
+@keyframes wheel { 0% { transform: translateY(0); opacity: 1 } 80% { transform: translateY(14px); opacity: 0 } 100% { opacity: 0 } }
+.toy-label { font-weight: 800; color: var(--ink-soft); font-size: 15px; }
+
+/* =========================================================
+   3. FEATURE TOUR (canvas stays fixed, cards scroll past)
+   ========================================================= */
+.tour { overflow-x: clip; }
+.tour-step { min-height: 100svh; display: flex; align-items: center; padding-block: 48px; }
+.tour-step:nth-child(even) { justify-content: flex-end; }
+.feature-card {
+  max-width: 440px; background: var(--card); border-radius: var(--radius); padding: 32px; box-shadow: var(--shadow);
+  display: grid; gap: 12px;
+}
+.feature-card .num { width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; font: 800 24px var(--font-display); color: var(--card); }
+.feature-card h2 { font-size: clamp(36px, 5vw, 56px); }
+.feature-card p { color: var(--ink-soft); }
+
+/* Reveal animation (content is visible by default; JS adds .pre only if motion is OK) */
+.reveal { transition: transform .9s var(--bounce), opacity .6s ease; }
+.reveal.pre { transform: translateX(-60px); opacity: 0; }
+.tour-step:nth-child(even) .reveal.pre { transform: translateX(60px); }
+.reveal.pre.up { transform: translateY(50px); }
+
+/* =========================================================
+   3b. BUILD YOUR OWN (transparent: the 3D canvas shows through)
+   ========================================================= */
+.builder { padding-block: 64px; }
+.builder-grid { display: grid; grid-template-columns: minmax(0, 440px) minmax(0, 1fr); gap: 24px; align-items: center; min-height: 100svh; }
+.builder-panel { background: var(--card); border-radius: var(--radius); padding: 28px; box-shadow: var(--shadow); display: grid; gap: 16px; }
+.builder-panel h2 { font-size: clamp(40px, 5vw, 60px); }
+.builder-panel > p { color: var(--ink-soft); }
+.choice-row { display: grid; gap: 6px; }
+.choice-label { font-weight: 800; font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-soft); }
+.choices { display: flex; gap: 8px; flex-wrap: wrap; }
+.choices button {
+  font: 800 15px var(--font-body); border: 3px solid var(--ink); background: var(--cream); color: var(--ink);
+  padding: 8px 14px; border-radius: 999px; cursor: pointer; transition: transform .3s var(--bounce), background .2s;
+}
+.choices button:hover { transform: translateY(-2px); }
+.choices button[aria-pressed="true"] { background: var(--ink); color: var(--cream); }
+.combo { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; border-top: 2px dashed var(--cream-2); padding-top: 16px; }
+.combo-name { font: 800 30px/1 var(--font-display); color: var(--tomato); }
+.btn-small { font-size: 18px; padding: 10px 22px; }
+.drag-hint { font-size: 15px; font-weight: 700; color: var(--ink-soft); }
+.builder-drag { min-height: 80svh; cursor: grab; border-radius: var(--radius); }
+.builder-drag:active { cursor: grabbing; }
+
+/* =========================================================
+   4. PLAYTIME BY THE NUMBERS (D3)
+   ========================================================= */
+.numbers { background: var(--ink); color: var(--cream); padding-block: 96px; }
+.numbers .eyebrow { color: var(--sun); }
+.numbers-head { display: grid; gap: 16px; max-width: 760px; margin-bottom: 32px; }
+.numbers-head h2 { font-size: clamp(44px, 7vw, 92px); }
+.numbers-head p { color: #D9D2E6; }
+.filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; }
+.filters button {
+  font: 800 15px var(--font-body); padding: 10px 18px; border-radius: 999px; cursor: pointer;
+  border: 2px solid #5E5470; background: transparent; color: var(--cream); transition: transform .3s var(--bounce), background .3s;
+}
+.filters button:hover { transform: translateY(-2px); }
+.filters button[aria-pressed="true"] { background: var(--cream); color: var(--ink); border-color: var(--cream); }
+.viz-layout { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 32px; }
+.viz-sticky { position: sticky; top: calc(24px + env(safe-area-inset-top, 0px)); align-self: start; }
+.viz-box { background: #362C4F; border-radius: var(--radius); padding: 16px; }
+#viz { width: 100%; height: auto; display: block; }
+#viz .axis text { fill: #D9D2E6; font: 700 13px var(--font-body); }
+#viz .axis line, #viz .grid line { stroke: #4D4266; }
+#viz .flower { cursor: pointer; transition: opacity .5s; }
+#viz .flower:focus { outline: none; }
+#viz .flower:focus .ring { stroke: var(--cream); stroke-width: 3; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 16px; font-size: 15px; color: #D9D2E6; }
+.legend span { display: inline-flex; align-items: center; gap: 8px; }
+.legend i { width: 14px; height: 14px; border-radius: 50%; display: inline-block; }
+.steps { display: grid; gap: 50vh; padding-block: 10vh 30vh; }
+.step { background: var(--cream); color: var(--ink); border-radius: var(--radius); padding: 24px; opacity: .45; transition: opacity .4s, transform .5s var(--bounce); }
+.step.active { opacity: 1; transform: scale(1.03); }
+.step h3 { font-size: 30px; margin-bottom: 8px; }
+.tooltip {
+  position: fixed; z-index: 50; pointer-events: none; background: var(--cream); color: var(--ink);
+  border-radius: 16px; padding: 10px 14px; font-size: 14px; line-height: 1.4; box-shadow: var(--shadow);
+  opacity: 0; transform: translateY(6px) scale(.95); transition: opacity .2s, transform .3s var(--bounce); max-width: 220px;
+}
+.tooltip.show { opacity: 1; transform: none; }
+.tooltip b { font-family: var(--font-display); font-size: 18px; display: block; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* =========================================================
+   5. PLAYTIME MOMENTS (pinned horizontal scroll)
+   ========================================================= */
+.moments { background: var(--sun); }
+.moments-pin { position: sticky; top: 0; height: 100svh; overflow: hidden; display: flex; flex-direction: column; justify-content: center; gap: 32px; }
+.ruler {
+  position: absolute; inset: 0 0 auto 0; height: 100%; pointer-events: none; opacity: .22;
+  background-image: repeating-linear-gradient(90deg, var(--ink) 0 2px, transparent 2px 100px), repeating-linear-gradient(90deg, var(--ink) 0 1px, transparent 1px 20px);
+  background-size: 100% 70px, 100% 34px; background-repeat: repeat-x; background-position: 0 100%, 0 100%;
+}
+.ruler-nums { position: absolute; left: 0; right: 0; bottom: 76px; display: flex; font: 800 22px var(--font-display); opacity: .35; pointer-events: none; }
+.ruler-nums span { flex: 0 0 100px; padding-left: 6px; }
+.moments h2 { font-size: clamp(44px, 7vw, 92px); }
+.track { display: flex; gap: 24px; padding-inline: var(--gutter); will-change: transform; }
+.moment {
+  flex: 0 0 min(360px, 80vw); background: var(--card); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow);
+  display: grid; gap: 12px; transform: rotate(var(--tilt, 0deg));
+}
+.moment .art { aspect-ratio: 4 / 3; border-radius: 20px; max-width: 100%; display: grid; place-items: center; overflow: hidden; }
+.moment h3 { font-size: 30px; }
+.moment .stat { font-weight: 800; font-size: 13px; letter-spacing: .12em; color: var(--ink-soft); }
+
+/* =========================================================
+   6. MARQUEE
+   ========================================================= */
+.marquee { background: var(--cream); padding-block: 80px; overflow: hidden; display: grid; gap: 20px; }
+.marquee-row { display: flex; width: max-content; gap: 16px; animation: slide 30s linear infinite; }
+.marquee-row.rev { animation-direction: reverse; }
+.marquee:hover .marquee-row, .marquee:focus-within .marquee-row { animation-play-state: paused; }
+@keyframes slide { to { transform: translateX(-50%); } }
+.sticker {
+  font: 800 clamp(20px, 3vw, 32px) var(--font-display); padding: 12px 28px; border-radius: 999px; white-space: nowrap;
+  border: 3px solid var(--ink); background: var(--bg, var(--card)); transform: rotate(var(--r, 0deg));
+}
+
+/* =========================================================
+   7. GALLERY
+   ========================================================= */
+.gallery { background: var(--sky); padding-block: 96px; overflow: hidden; color: var(--ink); }
+.gallery h2 { font-size: clamp(44px, 7vw, 92px); margin-bottom: 32px; }
+.gallery-row { display: flex; gap: 24px; width: max-content; animation: slide 45s linear infinite; }
+.gallery:hover .gallery-row { animation-play-state: paused; }
+.shot { width: 280px; display: grid; gap: 10px; margin: 0; }
+.shot .ph { aspect-ratio: 1; border-radius: var(--radius); display: grid; place-items: center; box-shadow: var(--shadow); max-width: 100%; }
+.shot figcaption { font-weight: 800; }
+.shot .ph img { width: 100%; height: 100%; object-fit: contain; }
+
+/* =========================================================
+   8. QUOTE
+   ========================================================= */
+.quote { background: var(--mint); padding-block: 120px; }
+.quote blockquote { margin: 0; max-width: 980px; position: relative; padding-top: 80px; }
+.quote blockquote::before { content: "\201C"; position: absolute; top: -40px; left: -10px; font: 800 220px/1 var(--font-display); color: var(--card); }
+.quote p { font: 800 clamp(32px, 5vw, 64px)/1.05 var(--font-display); }
+.quote cite { display: block; margin-top: 24px; font-style: normal; font-weight: 800; }
+.quote small { display: block; font-weight: 600; color: var(--ink-soft); }
+
+/* =========================================================
+   9. CTA (canvas visible again)
+   ========================================================= */
+.cta { min-height: 130svh; display: flex; align-items: flex-end; padding-block: 60vh 80px; text-align: center; }
+.cta .wrap { width: 100%; display: grid; gap: 24px; justify-items: center; }
+.cta h2 { font-size: clamp(52px, 9vw, 140px); }
+.cta-form { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; background: var(--card); padding: 10px; border-radius: 999px; box-shadow: var(--shadow); max-width: 100%; }
+.cta-form input { font: 600 18px var(--font-body); border: 0; padding: 14px 18px; border-radius: 999px; min-width: 0; width: 260px; max-width: 100%; background: var(--cream); color: var(--ink); }
+.btn {
+  font: 800 22px var(--font-display); border: 0; cursor: pointer; background: var(--tomato); color: var(--card);
+  padding: 14px 34px; border-radius: 999px; box-shadow: 0 6px 0 #B83420; transition: transform .3s var(--bounce), box-shadow .2s;
+}
+.btn:hover { transform: translateY(-3px) scale(1.03); }
+.btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #B83420; }
+.form-msg { font-weight: 800; min-height: 1.6em; }
+
+/* =========================================================
+   10. FOOTER
+   ========================================================= */
+footer { background: var(--ink); color: var(--cream); padding-block: 64px 32px; z-index: 3; overflow: hidden; }
+.wordmark { font: 800 clamp(48px, 13vw, 210px)/.85 var(--font-display); color: var(--sun); white-space: nowrap; margin-bottom: 32px; }
+.foot-row { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; font-weight: 600; }
+.foot-row nav { display: flex; gap: 20px; flex-wrap: wrap; }
+
+/* =========================================================
+   RESPONSIVE + REDUCED MOTION
+   ========================================================= */
+@media (max-width: 760px) {
+  body { font-size: 17px; }
+  .tour-step, .tour-step:nth-child(even) { align-items: flex-end; justify-content: center; }
+  .feature-card { padding: 24px; }
+  .viz-layout { grid-template-columns: 1fr; }
+  .viz-sticky { top: calc(8px + env(safe-area-inset-top, 0px)); z-index: 1; }
+  .steps { position: relative; z-index: 2; gap: 40vh; padding-block: 30vh 20vh; }
+  .moments-pin { position: relative; height: auto; padding-block: 80px; }
+  .hero-name { place-items: start center; padding-top: 150px; font-size: 19vw; white-space: nowrap; }
+  .hero-bottom .story { font-size: 16px; }
+  .hero-bottom .story strong { font-size: 24px; }
+  .track { flex-direction: column; transform: none !important; }
+  .moment { flex-basis: auto; }
+  .cta-form { border-radius: var(--radius); }
+  .builder-grid { grid-template-columns: 1fr; min-height: 0; }
+  .builder-drag { order: -1; min-height: 46svh; }
+  .builder { padding-block: 24px; }
+  .builder-drag { min-height: 40svh; }
+  .builder-panel { padding: 18px; gap: 10px; }
+  .builder-panel h2 { font-size: 32px; }
+  .builder-panel > p:not(.sr-only):not(.drag-hint) { display: none; } /* keeps toy + controls on one phone screen */
+  .combo-name { font-size: 24px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
+  .marquee-row, .gallery-row { animation: none; flex-wrap: wrap; width: auto; }
+}
+</style>
+
+</head>
+<body>
+<a class="skip" href="#content">Skip to content</a>
+
+<!-- 1. PRELOADER -->
+<div class="preloader" id="preloader" role="status" aria-live="polite">
+  <div>
+    <div class="loader-toys" aria-hidden="true">
+      <span class="lt"><svg viewBox="0 0 200 170"><rect x="70" y="30" width="60" height="48" rx="12" fill="#FFF8EF"/><rect x="60" y="84" width="80" height="64" rx="16" fill="#FFF8EF"/><circle cx="88" cy="54" r="6" fill="#F0533A"/><circle cx="112" cy="54" r="6" fill="#F0533A"/></svg></span>
+      <span class="lt"><svg viewBox="0 0 200 170"><rect x="78" y="10" width="16" height="54" rx="8" fill="#FFF8EF"/><rect x="106" y="10" width="16" height="54" rx="8" fill="#FFF8EF"/><circle cx="100" cy="98" r="44" fill="#FFF8EF"/><circle cx="87" cy="92" r="5" fill="#F0533A"/><circle cx="113" cy="92" r="5" fill="#F0533A"/></svg></span>
+      <span class="lt"><svg viewBox="0 0 200 170"><path d="M100 14 C132 46 132 100 122 132 H78 C68 100 68 46 100 14Z" fill="#FFF8EF"/><circle cx="100" cy="72" r="13" fill="#F0533A"/><path d="M88 134 L100 162 L112 134Z" fill="#FFF8EF"/></svg></span>
+    </div>
+    <div class="count" id="count">0%</div><small>Waking up the toys</small>
+  </div>
+</div>
+
+<!-- Fixed 3D canvas -->
+<canvas id="stage" aria-hidden="true"></canvas>
+
+<main id="content">
+  <!-- 2. HERO -->
+  <header class="hero wrap" id="top">
+    <div class="hero-name" aria-hidden="true"><span>JIM JIM</span><span>KIM KIM</span></div>
+    <div class="nav float">
+      <a class="logo" href="#top">JIM JIM <span>KIM KIM</span></a>
+      <div class="toy-tabs" role="group" aria-label="Choose a toy">
+        <button type="button" data-toy="0" aria-pressed="true">Jim the Bot</button>
+        <button type="button" data-toy="1" aria-pressed="false">Kim the Bunny</button>
+        <button type="button" data-toy="2" aria-pressed="false">Jim-Kim Rocket</button>
+      </div>
+      <div class="nav-right"><button type="button" class="sound-btn" id="soundBtn" aria-pressed="false">Sound off</button></div>
+    </div>
+    <div></div>
+    <div class="hero-bottom float">
+      <div class="story">
+        <h1 class="sr-only">JIM JIM KIM KIM</h1>
+        <strong>Snap-together buddies that light up, wave hello and rebuild into something new.</strong>
+        For builders aged 5 to 15. <span class="toy-label" id="toyLabel">Now showing: Jim the Bot</span>
+      </div>
+      <div class="scroll-hint"><i aria-hidden="true"></i> Scroll to play</div>
+    </div>
+  </header>
+
+  <!-- 3. FEATURE TOUR -->
+  <section class="tour" id="tour" aria-label="Features">
+    <div class="tour-step wrap">
+      <article class="feature-card float reveal">
+        <div class="num" style="background:var(--sky)">1</div>
+        <h2>Waves hello</h2>
+        <p>Press the belly button and your buddy waves its arms, ears or fins. Clip on new parts and the moves change too.</p>
+      </article>
+    </div>
+    <div class="tour-step wrap">
+      <article class="feature-card float reveal">
+        <div class="num" style="background:var(--mint)">2</div>
+        <h2>Glows with your mood</h2>
+        <p>A soft colour light in every toy. Pick a calm glow for bedtime or a bright pulse for party mode.</p>
+      </article>
+    </div>
+    <div class="tour-step wrap">
+      <article class="feature-card float reveal">
+        <div class="num" style="background:var(--tomato)">3</div>
+        <h2>Pops apart, builds anew</h2>
+        <p>Heads, hatches and noses pop off with a click. Swap them between Jim, Kim and the Rocket to invent your own toy.</p>
+      </article>
+    </div>
+  </section>
+
+  <!-- 3b. BUILD YOUR OWN -->
+  <section class="builder" id="build" aria-labelledby="build-title">
+    <div class="wrap builder-grid">
+      <div class="builder-panel float">
+        <span class="eyebrow">Build your own</span>
+        <h2 id="build-title">Mix and match</h2>
+        <p>Every head, body and set of arms clicks onto every other. Pick your parts and watch your toy come together.</p>
+        <div class="choice-row" role="group" aria-labelledby="lbl-head">
+          <span class="choice-label" id="lbl-head">Head</span>
+          <div class="choices" data-part="head">
+            <button type="button" data-value="0" aria-pressed="true">Jim</button><button type="button" data-value="1" aria-pressed="false">Kim</button><button type="button" data-value="2" aria-pressed="false">Rocket</button>
+          </div>
+        </div>
+        <div class="choice-row" role="group" aria-labelledby="lbl-body">
+          <span class="choice-label" id="lbl-body">Body</span>
+          <div class="choices" data-part="body">
+            <button type="button" data-value="0" aria-pressed="false">Jim</button><button type="button" data-value="1" aria-pressed="true">Kim</button><button type="button" data-value="2" aria-pressed="false">Rocket</button>
+          </div>
+        </div>
+        <div class="choice-row" role="group" aria-labelledby="lbl-arms">
+          <span class="choice-label" id="lbl-arms">Arms</span>
+          <div class="choices" data-part="arms">
+            <button type="button" data-value="0" aria-pressed="false">Jim arms</button><button type="button" data-value="1" aria-pressed="false">Kim ears</button><button type="button" data-value="2" aria-pressed="true">Rocket fins</button>
+          </div>
+        </div>
+        <div class="combo">
+          <p class="combo-name" id="comboName">Zoomy Bot-Bunny</p>
+          <button type="button" class="btn btn-small" id="randomBtn">Random</button>
+        </div>
+        <p class="drag-hint">Drag the toy to spin it. Tap it to make it hop.</p>
+        <p class="sr-only" id="buildLive" aria-live="polite"></p>
+      </div>
+      <div class="builder-drag float" id="buildDrag" role="img" aria-label="Your custom toy in 3D. Drag to spin it."></div>
+    </div>
+  </section>
+
+  <!-- 4. PLAYTIME BY THE NUMBERS (D3) -->
+  <section class="numbers solid" id="numbers" aria-labelledby="numbers-title">
+    <div class="wrap">
+      <div class="numbers-head">
+        <span class="eyebrow">Playtime by the numbers</span>
+        <h2 id="numbers-title">60 play sessions, 60 flowers</h2>
+        <p>We watched kids play with the toys for two weeks. Each flower is one play session: more petals means more smiles, longer petals mean longer play. These are sample numbers made up for this demo.</p>
+      </div>
+      <div class="filters" role="group" aria-label="Filter play sessions by toy">
+        <button type="button" data-filter="all" aria-pressed="true">All toys</button>
+        <button type="button" data-filter="Jim" aria-pressed="false">Jim</button>
+        <button type="button" data-filter="Kim" aria-pressed="false">Kim</button>
+        <button type="button" data-filter="Rocket" aria-pressed="false">Rocket</button>
+      </div>
+      <div class="viz-layout">
+        <div class="viz-sticky">
+          <div class="viz-box">
+            <svg id="viz" role="img" aria-labelledby="viz-desc"></svg>
+            <p id="viz-desc" class="sr-only">Chart of 60 sample play sessions arranged by day of the week and child age. Weekend sessions are longer with more smiles, and children aged 10 to 15 play most with the Rocket.</p>
+          </div>
+          <div class="legend" aria-hidden="true">
+            <span><i style="background:var(--tomato)"></i>Jim</span>
+            <span><i style="background:var(--sky)"></i>Kim</span>
+            <span><i style="background:var(--sun)"></i>Rocket</span>
+            <span>Petals = smiles</span><span>Petal length = minutes</span>
+          </div>
+        </div>
+        <div class="steps">
+          <div class="step" data-step="0"><h3>Every flower is a play session</h3><p>Columns are days of the week. Higher up means an older child (flowers are nudged slightly so none overlap). Hover, tap or tab to a flower to see its exact numbers.</p></div>
+          <div class="step" data-step="1"><h3>Weekends bloom bigger</h3><p>Saturday and Sunday sessions run longer and collect the most smiles.</p></div>
+          <div class="step" data-step="2"><h3>Older kids launch the Rocket</h3><p>Builders aged 10 to 15 pick the Rocket most, while younger kids love Kim.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. PLAYTIME MOMENTS -->
+  <section class="moments solid" id="moments" aria-labelledby="moments-title">
+    <div class="moments-pin">
+      <div class="ruler" aria-hidden="true"></div>
+      <div class="ruler-nums" aria-hidden="true" id="rulerNums"></div>
+      <div class="wrap" style="position:relative"><span class="eyebrow">Growing up together</span><h2 id="moments-title">Playtime moments</h2></div>
+      <div class="track" id="track"></div>
+    </div>
+  </section>
+
+  <!-- 6. MARQUEE -->
+  <section class="marquee solid" aria-label="Toy facts">
+    <div class="marquee-row" id="row1"></div>
+    <div class="marquee-row rev" id="row2"></div>
+  </section>
+
+  <!-- 7. GALLERY -->
+  <section class="gallery solid" aria-labelledby="gallery-title">
+    <div class="wrap"><h2 id="gallery-title">Spotted in the wild</h2></div>
+    <div class="gallery-row" id="galleryRow"></div>
+  </section>
+
+  <!-- 8. QUOTE -->
+  <section class="quote solid" aria-label="What families say">
+    <div class="wrap">
+      <blockquote>
+        <p>My son built a rocket with bunny ears and made it glow purple. He hasn't stopped talking about it for a week.</p>
+        <cite>Priya, parent of a 9-year-old<small>Fictional quote for this demo</small></cite>
+      </blockquote>
+    </div>
+  </section>
+
+  <!-- 9. CTA -->
+  <section class="cta" id="cta" aria-labelledby="cta-title">
+    <div class="wrap float">
+      <h2 id="cta-title">Meet the whole gang</h2>
+      <form class="cta-form" id="ctaForm">
+        <label class="sr-only" for="email">Email address</label>
+        <input id="email" type="email" required placeholder="you@example.com" autocomplete="email">
+        <button class="btn" type="submit">Join the waitlist</button>
+      </form>
+      <p class="form-msg" id="formMsg" role="status"></p>
+    </div>
+  </section>
+</main>
+
+<!-- 10. FOOTER -->
+<footer>
+  <div class="wordmark" aria-hidden="true">JIM JIM KIM KIM</div>
+  <div class="wrap foot-row">
+    <nav aria-label="Footer"><a href="#tour">Features</a><a href="#build">Build your own</a><a href="#numbers">Playtime data</a><a href="#moments">Moments</a><a href="#cta">Waitlist</a></nav>
+    <p>Made for [Your university module] · Concept project, not a real product</p>
+  </div>
+</footer>
+
+<div class="tooltip" id="tooltip" aria-hidden="true"></div>
+
+<!-- D3 (global) loads before our scripts -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+
+<!-- ================= PAGE CONTENT + D3 CHART ================= -->
+<script>
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const COLORS = { Jim: '#F0533A', Kim: '#3FA7F5', Rocket: '#FFC83D' };
+
+/* ---- Moments cards, marquee stickers and gallery (simple data -> HTML) ---- */
+const moments = [
+  ['First build', '1 TOY · 12 PARTS · 5 MINUTES', '#FF8FB1', 'bot'],
+  ['Bedtime glow', '7 COLOURS · 1 CALM NIGHT', '#3FA7F5', 'moon'],
+  ['Party mode', '3 MODES · 20 SOUNDS · 1 BIG SMILE', '#F0533A', 'star'],
+  ['Swap-a-head', '3 HEADS · 27 COMBOS', '#52D6A6', 'bunny'],
+  ['Launch day', '10 SECONDS · 1 COUNTDOWN · LIFTOFF', '#2B2240', 'rocket'],
+];
+// Tiny inline SVG illustrations stand in for real photos
+function art(kind, bg) {
+  const fg = bg === '#2B2240' ? '#FFC83D' : '#FFF8EF';
+  const shapes = {
+    bot: `<rect x="70" y="40" width="60" height="44" rx="12" fill="${fg}"/><rect x="60" y="88" width="80" height="60" rx="16" fill="${fg}"/><circle cx="88" cy="62" r="6" fill="#2B2240"/><circle cx="112" cy="62" r="6" fill="#2B2240"/>`,
+    moon: `<circle cx="100" cy="80" r="44" fill="${fg}"/><circle cx="122" cy="66" r="40" fill="${bg}"/><circle cx="60" cy="40" r="4" fill="${fg}"/><circle cx="150" cy="120" r="5" fill="${fg}"/>`,
+    star: `<polygon points="100,22 116,64 160,66 125,92 138,134 100,110 62,134 75,92 40,66 84,64" fill="${fg}"/>`,
+    bunny: `<rect x="78" y="18" width="16" height="50" rx="8" fill="${fg}"/><rect x="106" y="18" width="16" height="50" rx="8" fill="${fg}"/><circle cx="100" cy="92" r="40" fill="${fg}"/><circle cx="88" cy="88" r="5" fill="#2B2240"/><circle cx="112" cy="88" r="5" fill="#2B2240"/>`,
+    rocket: `<path d="M100 20 C130 50 130 100 120 130 H80 C70 100 70 50 100 20Z" fill="${fg}"/><circle cx="100" cy="72" r="12" fill="#3FA7F5"/><path d="M90 132 L100 160 L110 132Z" fill="#F0533A"/>`,
+  };
+  return `<svg viewBox="0 0 200 170" width="70%" aria-hidden="true">${shapes[kind]}</svg>`;
+}
+document.getElementById('track').innerHTML = moments.map(([t, s, bg, k], i) => `
+  <article class="moment reveal" style="--tilt:${i % 2 ? 1.5 : -1.5}deg">
+    <div class="art" style="background:${bg}" role="img" aria-label="Illustration: ${t}">${art(k, bg)}</div>
+    <h3>${t}</h3><p class="stat">${s}</p>
+  </article>`).join('');
+document.getElementById('rulerNums').innerHTML = Array.from({ length: 40 }, (_, i) => `<span>${(i + 1) * 10}</span>`).join('');
+
+const stickers = ['Safe materials', 'No batteries needed', 'Ages 5 to 15', 'Award-winning design', 'Snap-fit parts', 'Glow modes', 'Recyclable box', 'Swap heads'];
+const tones = ['#FFFFFF', '#FFC83D', '#52D6A6', '#FF8FB1', '#3FA7F5'];
+const stickerHTML = (list, off) => list.concat(list).map((s, i) => `<span class="sticker" style="--bg:${tones[(i + off) % 5]};--r:${(i % 3 - 1) * 2}deg">${s}</span>`).join('');
+row1.innerHTML = stickerHTML(stickers, 0);
+row2.innerHTML = stickerHTML([...stickers].reverse(), 2);
+row2.setAttribute('aria-hidden', 'true'); // second row repeats the same facts
+
+const shots = [['Kitchen-table build', 'bot', '#FF8FB1'], ['Glow fort', 'moon', '#2B2240'], ['Rocket in the garden', 'rocket', '#FFC83D'], ['Bunny school run', 'bunny', '#52D6A6'], ['Party at Gran\'s', 'star', '#F0533A'], ['Sleepover swap', 'bot', '#FFF8EF']];
+galleryRow.innerHTML = shots.concat(shots).map(([c, k, bg], i) => `
+  <figure class="shot" ${i >= shots.length ? 'aria-hidden="true"' : ''}><div class="ph" style="background:${bg}" role="img" aria-label="Photo placeholder: ${c}">${art(k, bg === '#FFF8EF' ? '#F0533A' : bg)}</div><figcaption>${c}</figcaption></figure>`).join('');
+
+/* ---- CTA form: page-only demo, nothing is sent ---- */
+ctaForm.addEventListener('submit', e => {
+  e.preventDefault();
+  formMsg.textContent = "Thanks! This is a demo page, so your email wasn't sent anywhere.";
+});
+
+/* ---- Reveal on scroll (IntersectionObserver) ---- */
+if (!REDUCED && 'IntersectionObserver' in window) {
+  const io = new IntersectionObserver(entries => entries.forEach(e => {
+    if (e.isIntersecting) { e.target.classList.remove('pre'); io.unobserve(e.target); }
+  }), { threshold: .25 });
+  document.querySelectorAll('.reveal').forEach(el => {
+    // only hide elements that are below the fold, so the first screen is complete at rest
+    if (el.getBoundingClientRect().top > innerHeight) { el.classList.add('pre'); if (el.classList.contains('moment')) el.classList.add('up'); io.observe(el); }
+  });
+}
+
+/* =========================================================
+   D3 FLOWER CHART
+   ========================================================= */
+// Seeded random numbers so the sample data (and its story) is the same every visit
+let seed = 7; const rand = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const data = d3.range(60).map(i => {
+  const day = DAYS[Math.floor(rand() * 7)];
+  const age = 5 + Math.floor(rand() * 11);
+  const weekend = day === 'Sat' || day === 'Sun';
+  // older kids lean Rocket, younger kids lean Kim
+  const r = rand() + (age - 10) * 0.06;
+  const toy = r > 0.66 ? 'Rocket' : r > 0.33 ? 'Jim' : 'Kim';
+  const minutes = Math.round((weekend ? 35 : 15) + rand() * (weekend ? 40 : 25));
+  const smiles = Math.round((weekend ? 6 : 3) + rand() * 4);
+  return { id: i, day, age, toy, minutes, smiles, weekend };
+});
+
+const W = 720, H = 600, M = { t: 24, r: 24, b: 44, l: 56 };
+const svg = d3.select('#viz').attr('viewBox', `0 0 ${W} ${H}`);
+const x = d3.scaleBand().domain(DAYS).range([M.l, W - M.r]).padding(.1);
+const y = d3.scaleLinear().domain([4.5, 15.5]).range([H - M.b, M.t]);
+const petalLen = d3.scaleSqrt().domain([10, 80]).range([8, 20]);
+
+// grid + axes, drawn with the same scales as the flowers
+svg.append('g').attr('class', 'grid').selectAll('line').data([5, 7, 9, 11, 13, 15]).join('line')
+  .attr('x1', M.l).attr('x2', W - M.r).attr('y1', d => y(d)).attr('y2', d => y(d));
+svg.append('g').attr('class', 'axis').attr('transform', `translate(0,${H - M.b + 8})`)
+  .call(d3.axisBottom(x).tickSize(0)).call(g => g.select('.domain').remove());
+svg.append('g').attr('class', 'axis').attr('transform', `translate(${M.l - 8},0)`)
+  .call(d3.axisLeft(y).tickValues([5, 7, 9, 11, 13, 15]).tickSize(0).tickFormat(d => d + ' yrs')).call(g => g.select('.domain').remove());
+
+// Force layout: each flower is pulled towards its day column (x) and its age line (y),
+// while forceCollide pushes flowers apart so none of them overlap and every one can be tapped.
+data.forEach(d => { d.x = x(d.day) + x.bandwidth() / 2; d.y = y(d.age); });
+const sim = d3.forceSimulation(data)
+  .force('x', d3.forceX(d => x(d.day) + x.bandwidth() / 2).strength(.25))
+  .force('y', d3.forceY(d => y(d.age)).strength(.6))
+  .force('collide', d3.forceCollide(d => petalLen(d.minutes) + 3).iterations(3))
+  .stop();
+for (let i = 0; i < 300; i++) {
+  sim.tick();
+  data.forEach(d => { // keep every flower inside the plot area
+    const r = petalLen(d.minutes);
+    d.x = Math.max(M.l + r, Math.min(W - M.r - r, d.x));
+    d.y = Math.max(M.t + r, Math.min(H - M.b - r, d.y));
+  });
+}
+const px = d => d.x, py = d => d.y;
+
+// One flower = a ring of petal ellipses + a centre dot
+const petalPath = len => `M0,0 C${len * .45},${-len * .35} ${len * .45},${-len * .85} 0,${-len} C${-len * .45},${-len * .85} ${-len * .45},${-len * .35} 0,0Z`;
+const flowers = svg.append('g').selectAll('g.flower').data(data).join('g')
+  .attr('class', 'flower').attr('tabindex', 0).attr('role', 'img')
+  .attr('aria-label', d => `${d.toy}, age ${d.age}, ${d.day}: ${d.minutes} minutes, ${d.smiles} smiles`)
+  .attr('transform', d => `translate(${px(d)},${py(d)}) scale(${REDUCED ? 1 : 0})`);
+flowers.each(function (d) {
+  const g = d3.select(this), len = petalLen(d.minutes);
+  g.selectAll('path').data(d3.range(d.smiles)).join('path')
+    .attr('d', petalPath(len)).attr('fill', COLORS[d.toy]).attr('fill-opacity', .85)
+    .attr('stroke', '#2B2240').attr('stroke-width', 1)
+    .attr('transform', i => `rotate(${i * 360 / d.smiles})`);
+  g.append('circle').attr('class', 'ring').attr('r', 5).attr('fill', '#FFF8EF').attr('stroke', '#2B2240');
+});
+
+// Grow in one by one when the chart is first seen
+let grown = REDUCED;
+new IntersectionObserver((es, o) => {
+  if (es[0].isIntersecting && !grown) {
+    grown = true; o.disconnect();
+    flowers.transition().delay((d, i) => i * 25).duration(700).ease(d3.easeBackOut.overshoot(2))
+      .attr('transform', d => `translate(${px(d)},${py(d)}) scale(1)`);
+  }
+}, { threshold: .3 }).observe(document.getElementById('viz'));
+
+// Tooltip on hover and keyboard focus
+const tip = document.getElementById('tooltip');
+function showTip(ev, d) {
+  tip.innerHTML = `<b>${d.toy} · ${d.day}</b>Age ${d.age}<br>${d.minutes} minutes of play<br>${d.smiles} smiles counted`;
+  const r = ev.currentTarget.getBoundingClientRect();
+  tip.style.left = Math.min(innerWidth - 230, Math.max(8, r.left + r.width / 2 - 100)) + 'px';
+  tip.style.top = Math.max(8, r.top - 96) + 'px';
+  tip.classList.add('show');
+  d3.select(ev.currentTarget).raise().transition().duration(300).ease(d3.easeBackOut)
+    .attr('transform', `translate(${px(d)},${py(d)}) scale(1.35)`);
+}
+function hideTip(ev, d) {
+  tip.classList.remove('show');
+  d3.select(ev.currentTarget).transition().duration(300).attr('transform', `translate(${px(d)},${py(d)}) scale(1)`);
+}
+flowers.on('mouseenter focus', showTip).on('mouseleave blur', hideTip);
+
+// Highlighting: filter buttons + scrollytelling steps both decide which flowers stay bright
+let toyFilter = 'all', storyStep = 0;
+const storyTest = [() => true, d => d.weekend, d => d.age >= 10 && d.toy === 'Rocket'];
+function applyHighlight() {
+  flowers.transition().duration(500).style('opacity', d =>
+    (toyFilter === 'all' || d.toy === toyFilter) && storyTest[storyStep](d) ? 1 : .12);
+}
+document.querySelectorAll('.filters button').forEach(b => b.addEventListener('click', () => {
+  toyFilter = b.dataset.filter;
+  document.querySelectorAll('.filters button').forEach(o => o.setAttribute('aria-pressed', o === b));
+  applyHighlight();
+}));
+const stepEls = document.querySelectorAll('.step');
+const stepIO = new IntersectionObserver(es => es.forEach(e => {
+  if (e.isIntersecting) {
+    storyStep = +e.target.dataset.step;
+    stepEls.forEach(s => s.classList.toggle('active', s === e.target));
+    applyHighlight();
+  }
+}), { rootMargin: '-45% 0px -45% 0px' });
+stepEls.forEach(s => stepIO.observe(s));
+stepEls[0].classList.add('active');
+
+/* ---- Pinned horizontal scroll for Playtime Moments ---- */
+const momentsSec = document.getElementById('moments'), track = document.getElementById('track');
+function sizeMoments() {
+  if (innerWidth <= 760) { momentsSec.style.height = ''; return; }
+  momentsSec.style.height = (track.scrollWidth - innerWidth + innerHeight * 1.2) + 'px';
+}
+function scrollMoments() {
+  if (innerWidth <= 760) return;
+  const r = momentsSec.getBoundingClientRect();
+  const p = Math.min(1, Math.max(0, -r.top / (momentsSec.offsetHeight - innerHeight)));
+  track.style.transform = `translateX(${-p * Math.max(0, track.scrollWidth - innerWidth)}px)`;
+}
+addEventListener('resize', () => { sizeMoments(); scrollMoments(); });
+addEventListener('scroll', scrollMoments, { passive: true });
+sizeMoments();
+</script>
+
+<!-- ================= THREE.JS STAGE ================= -->
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const mobile = () => innerWidth <= 760;
+const lerp = (a, b, t) => a + (b - a) * t;
+const lerp3 = (a, b, t) => a.map((v, i) => lerp(v, b[i], t));
+const smooth = t => t * t * (3 - 2 * t);
+const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+const easeOutBack = x => { const c1 = 2.2, c3 = c1 + 1; return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); };
+const now = () => performance.now() / 1000;
+
+/* =========================================================
+   A. SOUND: tiny synth sounds made with the Web Audio API.
+   Off by default; nothing plays until the visitor presses "Sound on".
+   ========================================================= */
+let audio = null, soundOn = false;
+const soundBtn = document.getElementById('soundBtn');
+soundBtn.addEventListener('click', () => {
+  soundOn = !soundOn;
+  if (soundOn && !audio) audio = new (window.AudioContext || window.webkitAudioContext)();
+  if (audio) audio.resume();
+  soundBtn.setAttribute('aria-pressed', soundOn);
+  soundBtn.textContent = soundOn ? 'Sound on' : 'Sound off';
+  if (soundOn) play('chime');
+});
+function tone({ type = 'sine', f0, f1, dur, vol = .2, delay = 0 }) {
+  const t0 = audio.currentTime + delay, o = audio.createOscillator(), g = audio.createGain();
+  o.type = type; o.frequency.setValueAtTime(f0, t0); o.frequency.exponentialRampToValueAtTime(f1, t0 + dur);
+  g.gain.setValueAtTime(vol, t0); g.gain.exponentialRampToValueAtTime(.001, t0 + dur);
+  o.connect(g).connect(audio.destination); o.start(t0); o.stop(t0 + dur + .05);
+}
+const sfx = {
+  pop: () => tone({ f0: 900, f1: 260, dur: .12, vol: .25 }),                              // parts clicking on
+  chime: () => { tone({ f0: 1046, f1: 1040, dur: .7, vol: .1 }); tone({ f0: 1568, f1: 1560, dur: .9, vol: .07, delay: .09 }); }, // glow
+  boing: () => tone({ type: 'triangle', f0: 150, f1: 640, dur: .32, vol: .22 }),          // hop / landing
+  whoosh: () => {                                                                          // rocket: filtered noise sweep
+    const len = .6, buf = audio.createBuffer(1, audio.sampleRate * len, audio.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    const src = audio.createBufferSource(), f = audio.createBiquadFilter(), g = audio.createGain(), t0 = audio.currentTime;
+    src.buffer = buf; f.type = 'bandpass'; f.Q.value = 1.2;
+    f.frequency.setValueAtTime(300, t0); f.frequency.exponentialRampToValueAtTime(3200, t0 + len);
+    g.gain.setValueAtTime(.001, t0); g.gain.exponentialRampToValueAtTime(.35, t0 + .15); g.gain.exponentialRampToValueAtTime(.001, t0 + len);
+    src.connect(f).connect(g).connect(audio.destination); src.start(t0);
+  },
+};
+function play(name) { if (soundOn && audio) sfx[name](); }
+
+/* =========================================================
+   B. RENDERER, SCENE, CAMERA, LIGHTS
+   ========================================================= */
+const canvas = document.getElementById('stage');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 100);
+scene.add(new THREE.HemisphereLight(0xFFFFFF, 0xFCD9B8, 1.6));
+const key = new THREE.DirectionalLight(0xFFFFFF, 2.2); key.position.set(3, 5, 4); scene.add(key);
+const rim = new THREE.DirectionalLight(0x9FD4FF, 1.2); rim.position.set(-4, 2, -3); scene.add(rim);
+
+// Soft round shadow under each toy (a canvas gradient on a flat plane)
+const shadowTex = (() => {
+  const c = document.createElement('canvas'); c.width = c.height = 128;
+  const g = c.getContext('2d'), grd = g.createRadialGradient(64, 64, 4, 64, 64, 64);
+  grd.addColorStop(0, 'rgba(43,34,64,.35)'); grd.addColorStop(1, 'rgba(43,34,64,0)');
+  g.fillStyle = grd; g.fillRect(0, 0, 128, 128); return new THREE.CanvasTexture(c);
+})();
+function shadow(y = -1.35) {
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 2.4), new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false }));
+  m.rotation.x = -Math.PI / 2; m.position.y = y; m.userData.noHit = true; return m;
+}
+
+// Auto quality: maxPixelRatio drops if the frame rate stays low (see the render loop)
+let maxPR = 2, lowQuality = false;
+function resize() {
+  renderer.setPixelRatio(Math.min(devicePixelRatio, mobile() ? Math.min(1.25, maxPR) : maxPR));
+  renderer.setSize(innerWidth, innerHeight, false);
+  camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
+}
+addEventListener('resize', resize); resize();
+
+/* =========================================================
+   C. LOAD THE THREE TOYS (.glb), with a primitive stand-in if one fails
+   ========================================================= */
+const TOYS = [
+  { file: 'models/jim.glb', name: 'Jim the Bot' },
+  { file: 'models/kim.glb', name: 'Kim the Bunny' },
+  { file: 'models/rocket.glb', name: 'Jim-Kim Rocket' },
+];
+const holders = TOYS.map(() => { const g = new THREE.Group(); g.visible = false; scene.add(g); return g; });
+const toyState = TOYS.map(() => ({ parts: {}, enterT: -1, leaveT: -1, hopT: -10, landed: true }));
+const sources = [];   // the loaded model of each toy (reused by the builder and the gallery)
+const library = [];   // separated parts of each toy for the builder: { head, body, arms }
+
+function standIn(color) {
+  const g = new THREE.Group(), m = c => new THREE.MeshStandardMaterial({ color: c, roughness: .5 });
+  g.add(new THREE.Mesh(new THREE.SphereGeometry(.7, 32, 20), m(color)));
+  const pop = new THREE.Group(); pop.name = 'pop'; pop.position.y = 1; g.add(pop);
+  pop.add(new THREE.Mesh(new THREE.BoxGeometry(.9, .7, .8), m(0xFFC83D)));
+  const glow = new THREE.Mesh(new THREE.SphereGeometry(.18, 20, 12), new THREE.MeshStandardMaterial({ color: 0x52D6A6, emissive: 0x52D6A6, emissiveIntensity: .35 }));
+  glow.name = 'glow'; glow.position.set(0, 0, .68); g.add(glow);
+  for (const [n, s] of [['armL', -1], ['armR', 1]]) {
+    const p = new THREE.Group(); p.name = n; p.position.set(s * .72, .3, 0);
+    const a = new THREE.Mesh(new THREE.CapsuleGeometry(.12, .5, 4, 12), m(0x3FA7F5)); a.position.y = -.35; p.add(a); g.add(p);
+  }
+  return g;
+}
+
+// Split a toy into head / body / arms so parts can be mixed in the builder
+function extractParts(src) {
+  const head = src.getObjectByName('pop').clone(true);
+  head.position.set(0, 0, 0); head.rotation.set(0, 0, 0);
+  ['armL', 'armR'].forEach(n => { const a = head.getObjectByName(n); if (a) a.parent.remove(a); }); // Kim's ears live on her head
+  const body = src.clone(true);
+  ['pop', 'armL', 'armR'].forEach(n => { const o = body.getObjectByName(n); if (o) o.parent.remove(o); });
+  const arms = ['armL', 'armR'].map(n => { const a = src.getObjectByName(n).clone(true); a.position.set(0, 0, 0); a.rotation.set(0, 0, 0); return a; });
+  return { head, body, arms };
+}
+
+function attach(i, object) {
+  sources[i] = object;
+  library[i] = extractParts(object);
+  holders[i].add(object, shadow());
+  const p = toyState[i].parts;
+  ['armL', 'armR', 'pop', 'glow'].forEach(n => p[n] = object.getObjectByName(n));
+  p.eyes = ['eyeL', 'eyeR'].map(n => object.getObjectByName(n)).filter(Boolean);
+  if (p.pop) p.popY = p.pop.position.y;
+  if (p.glow) { p.glow.material = p.glow.material.clone(); p.glowBase = p.glow.material.emissiveIntensity; }
+  document.querySelectorAll('.lt')[i].classList.add('awake'); // wake this toy's silhouette on the preloader
+}
+
+/* ---- Preloader: real progress from the LoadingManager, shown as a counting number ---- */
+const countEl = document.getElementById('count');
+let shown = 0, target = 0, finished = false, idleStart = 0;
+const manager = new THREE.LoadingManager();
+manager.onProgress = (u, loaded, total) => { target = Math.max(target, loaded / total * 100); };
+const loader = new GLTFLoader(manager);
+let pending = TOYS.length;
+const done = () => { target = Math.max(target, (TOYS.length - pending + 1) / TOYS.length * 100); if (--pending === 0) { target = 100; allLoaded(); } };
+const fallback = i => () => { attach(i, standIn([0xF0533A, 0x3FA7F5, 0xFFFFFF][i])); done(); };
+TOYS.forEach((t, i) => {
+  // Hosted demo: models are embedded in the page as base64 (window.EMBEDDED_MODELS).
+  // Your own copy: they load from the models/ folder.
+  const b64 = window.EMBEDDED_MODELS && window.EMBEDDED_MODELS[t.file];
+  if (b64) {
+    const bytes = Uint8Array.from(atob(b64), ch => ch.charCodeAt(0));
+    loader.parse(bytes.buffer, '', gltf => { attach(i, gltf.scene); done(); }, fallback(i));
+  } else {
+    loader.load(t.file, gltf => { attach(i, gltf.scene); done(); }, undefined, fallback(i));
+  }
+});
+setTimeout(() => { target = 100; }, 9000); // never get stuck on the loader
+(function tickCounter() {
+  shown += (target - shown) * .12 + (target > shown ? .3 : 0);
+  if (shown > target) shown = target;
+  countEl.textContent = Math.round(shown) + '%';
+  if (shown >= 99.5 && !finished) {
+    finished = true; countEl.textContent = '100%';
+    setTimeout(() => {
+      document.getElementById('preloader').classList.add('done');
+      idleStart = now();                 // idle spin starts from the front
+      toyState[current].enterT = now() + .35; toyState[current].landed = false; // first toy drops in
+    }, 300);
+    return;
+  }
+  requestAnimationFrame(tickCounter);
+})();
+
+/* =========================================================
+   D. TOY PICKER: old toy jumps away, new toy drops in with squash and stretch
+   ========================================================= */
+let current = 0;
+const tabs = document.querySelectorAll('.toy-tabs button');
+tabs.forEach(b => b.addEventListener('click', () => {
+  const next = +b.dataset.toy;
+  if (next === current) return;
+  toyState[current].leaveT = now();
+  toyState[next].enterT = now() + .2; toyState[next].leaveT = -1; toyState[next].landed = false;
+  current = next;
+  tabs.forEach(o => o.setAttribute('aria-pressed', o === b));
+  document.getElementById('toyLabel').textContent = 'Now showing: ' + TOYS[current].name;
+  play(next === 2 ? 'whoosh' : 'pop');
+}));
+
+// Returns scale / height / squash for a toy, based on its enter and leave animations
+function selection(s, isCurrent, t) {
+  if (isCurrent) {
+    if (s.enterT < 0) return { scale: 0, y: 0, sq: 1, spin: 0 };
+    const e = t - s.enterT;
+    if (e < 0) return { scale: 0, y: 0, sq: 1, spin: 0 };
+    if (REDUCED) return { scale: 1, y: 0, sq: 1, spin: 0 };
+    if (e < .5) { const p = e / .5; return { scale: 1, y: 2.8 * (1 - p * p), sq: 1.15, spin: 0 }; } // falling, stretched
+    if (!s.landed) { s.landed = true; play('boing'); }
+    const q = Math.min(1, (e - .5) / .5);
+    return { scale: 1, y: 0, sq: 1 - .3 * Math.sin(q * Math.PI * 2) * (1 - q), spin: 0 }; // squash, then wobble back
+  }
+  if (s.leaveT < 0) return { scale: 0, y: 0, sq: 1, spin: 0 };
+  const e = t - s.leaveT;
+  if (REDUCED || e > .5) return { scale: 0, y: 0, sq: 1, spin: 0 };
+  const p = e / .5;
+  return { scale: 1 - p * p, y: 2.4 * Math.sin(p * Math.PI / 2), sq: 1.1, spin: p * Math.PI * 1.5 }; // jump up and away
+}
+
+/* =========================================================
+   E. CLICK / TAP A TOY TO MAKE IT HOP (raycaster)
+   ========================================================= */
+const raycaster = new THREE.Raycaster(), ndc = new THREE.Vector2();
+function hits(clientX, clientY, object) {
+  ndc.set(clientX / innerWidth * 2 - 1, -(clientY / innerHeight) * 2 + 1);
+  raycaster.setFromCamera(ndc, camera);
+  return raycaster.intersectObject(object, true).some(h => !h.object.userData.noHit);
+}
+const ignoreTargets = 'button, a, input, label, form, .solid, footer, .builder-panel, .feature-card, .builder-drag';
+addEventListener('click', e => {
+  if (e.target.closest(ignoreTargets) || !holders[current].visible) return;
+  if (hits(e.clientX, e.clientY, holders[current])) { toyState[current].hopT = now(); play('boing'); }
+});
+let hoverQueued = false;
+addEventListener('pointermove', e => {
+  if (hoverQueued) return; hoverQueued = true;
+  requestAnimationFrame(() => {
+    hoverQueued = false;
+    const over = !e.target.closest(ignoreTargets) && holders[current].visible && hits(e.clientX, e.clientY, holders[current]);
+    document.body.style.cursor = over ? 'pointer' : '';
+  });
+});
+
+/* ---- Mouse tilt ---- */
+const mouse = { x: 0, y: 0 };
+addEventListener('pointermove', e => { mouse.x = e.clientX / innerWidth - .5; mouse.y = e.clientY / innerHeight - .5; });
+
+/* =========================================================
+   F. BUILD YOUR OWN: mix heads, bodies and arms from all three toys
+   ========================================================= */
+const builder = new THREE.Group(); builder.visible = false; scene.add(builder);
+const slots = { body: new THREE.Group(), head: new THREE.Group(), armL: new THREE.Group(), armR: new THREE.Group() };
+Object.values(slots).forEach(s => builder.add(s));
+builder.add(shadow(-1.4));
+const build = { head: 0, body: 1, arms: 2 };
+let builderEyes = [], builderHopT = -10;
+
+// Where parts attach on each body (measured from the models)
+const BODY = [
+  { top: .6, arm: [.8, .35], fin: [.62, -.35] },   // Jim body
+  { top: .6, arm: [.74, .12], fin: [.6, -.4] },    // Kim body
+  { top: .98, arm: [.5, .05], fin: [.42, -.45] },  // Rocket body
+];
+const HEAD_LIFT = [.39, .42, 0]; // how far each head sits above its attach point
+const PART_LABEL = { head: ['Jim', 'Kim', 'Rocket'], body: ['Jim', 'Kim', 'Rocket'], arms: ['Jim arms', 'Kim ears', 'Rocket fins'] };
+const WORD = ['Bot', 'Bunny', 'Rocket'], ARM_WORD = ['Waving', 'Floppy', 'Zoomy'];
+
+function comboName() {
+  const { head: h, body: b, arms: a } = build;
+  if (h === b && b === a) return TOYS[h].name;
+  const hb = h === b ? WORD[h] : `${WORD[h]}-${WORD[b]}`;
+  return `${ARM_WORD[a]} ${hb}`;
+}
+
+function fill(slot, object) {
+  slot.clear(); slot.add(object);
+  slot.userData.t0 = now(); // start the pop-in bounce
+}
+function layoutBuilder() {
+  const B = BODY[build.body];
+  slots.head.position.set(0, B.top + HEAD_LIFT[build.head], 0);
+  const kimClassic = build.arms === 1 && build.head === 1; // Kim's ears go back on Kim's head
+  ['armL', 'armR'].forEach((n, k) => {
+    const s = k === 0 ? -1 : 1, slot = slots[n];
+    if (kimClassic) { slots.head.add(slot); slot.position.set(s * .22, .4, 0); slot.userData.tilt = 0; }
+    else {
+      builder.add(slot);
+      const p = build.arms === 2 ? B.fin : B.arm;
+      slot.position.set(s * p[0], p[1], 0);
+      // Kim ears turn sideways to act as arms; Jim arms lean out a little so round bodies don't hide them
+      slot.userData.tilt = build.arms === 1 ? -s * 2.2 : build.arms === 0 ? s * (build.body === 0 ? .1 : .4) : 0;
+    }
+  });
+  builderEyes = [];
+  builder.traverse(o => { if (o.name === 'eyeL' || o.name === 'eyeR') builderEyes.push(o); });
+}
+function setPart(kind, value, quiet) {
+  build[kind] = value;
+  const L = library[value];
+  if (L) {
+    if (kind === 'head') fill(slots.head, L.head.clone(true));
+    if (kind === 'body') fill(slots.body, L.body.clone(true));
+    if (kind === 'arms') { fill(slots.armL, L.arms[0].clone(true)); fill(slots.armR, L.arms[1].clone(true)); }
+    layoutBuilder();
+  }
+  document.querySelectorAll(`.choices[data-part="${kind}"] button`).forEach(b => b.setAttribute('aria-pressed', +b.dataset.value === value));
+  const name = comboName();
+  document.getElementById('comboName').textContent = name;
+  if (!quiet) {
+    document.getElementById('buildLive').textContent = `${kind[0].toUpperCase() + kind.slice(1)} set to ${PART_LABEL[kind][value]}. Your toy is called ${name}.`;
+    play(value === 2 && kind !== 'head' ? 'whoosh' : 'pop');
+  }
+}
+document.querySelectorAll('.choices button').forEach(b => b.addEventListener('click', () => setPart(b.parentElement.dataset.part, +b.dataset.value)));
+document.getElementById('randomBtn').addEventListener('click', () => {
+  ['body', 'head', 'arms'].forEach((k, i) => setTimeout(() => setPart(k, Math.floor(Math.random() * 3), i < 2), i * 140));
+});
+
+// Drag to spin (OrbitControls on a separate camera that the main camera follows here)
+const dragEl = document.getElementById('buildDrag');
+const builderCam = new THREE.PerspectiveCamera(35, 1, .1, 100);
+builderCam.position.set(1.2, 1, 7.2);
+const controls = new OrbitControls(builderCam, dragEl);
+controls.enableZoom = false; controls.enablePan = false; controls.enableDamping = true;
+controls.minPolarAngle = .7; // keep the view roughly side-on
+ controls.maxPolarAngle = 1.9; controls.target.set(0, .3, 0);
+function fitBuilderCam() { builderCam.position.setLength(mobile() ? 11 : 7.4); }
+fitBuilderCam(); addEventListener('resize', fitBuilderCam);
+let downAt = null;
+dragEl.addEventListener('pointerdown', e => { downAt = [e.clientX, e.clientY]; });
+dragEl.addEventListener('click', e => { // a tap (not a drag) on the toy makes it hop
+  if (downAt && Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]) < 6 && hits(e.clientX, e.clientY, builder)) { builderHopT = now(); play('boing'); }
+});
+
+/* =========================================================
+   G. GALLERY: render each toy in a pose to an image once the models are ready
+   ========================================================= */
+function renderGallery() {
+  const size = 420, r2 = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+  r2.setSize(size, size); r2.outputColorSpace = THREE.SRGBColorSpace; r2.toneMapping = THREE.ACESFilmicToneMapping;
+  const sc = new THREE.Scene(); sc.add(new THREE.HemisphereLight(0xFFFFFF, 0xFCD9B8, 1.7));
+  const l = new THREE.DirectionalLight(0xFFFFFF, 2.2); l.position.set(3, 5, 4); sc.add(l);
+  const cam = new THREE.PerspectiveCamera(32, 1, .1, 50);
+  const get = (o, n) => o.getObjectByName(n) || new THREE.Object3D();
+  const poses = [ // same order as the gallery captions
+    { toy: 0, cam: [1.6, .6, 6.2], ry: -.3, pose: o => { get(o, 'armR').rotation.z = 2.4; } },                 // Kitchen-table build
+    { toy: 1, cam: [0, .5, 6.4], ry: .35, glow: true },                                                          // Glow fort
+    { toy: 2, cam: [2, 1, 6.4], ry: .6, rz: -.35 },                                                              // Rocket in the garden
+    { toy: 1, cam: [-1.8, 1.2, 6.2], ry: -.5, pose: o => { get(o, 'armL').rotation.z = .5; get(o, 'armR').rotation.z = -.5; } }, // Bunny school run
+    { toy: 0, cam: [-1.2, 1.4, 6.8], ry: .5, pose: o => { const p = get(o, 'pop'); p.position.y += .45; p.rotation.y = .6; } },  // Party at Gran's
+    { toy: 2, cam: [0, .3, 6.8], ry: -.2, pose: o => { get(o, 'pop').position.y += .4; } },                     // Sleepover swap
+  ];
+  const urls = poses.map(ps => {
+    const o = sources[ps.toy].clone(true);
+    if (ps.pose) ps.pose(o);
+    if (ps.glow) { const g = o.getObjectByName('glow'); if (g) { g.material = g.material.clone(); g.material.emissiveIntensity = 2.4; } }
+    o.rotation.set(0, ps.ry || 0, ps.rz || 0);
+    sc.add(o); cam.position.set(...ps.cam); cam.lookAt(0, .35, 0);
+    r2.render(sc, cam);
+    const url = r2.domElement.toDataURL('image/png');
+    sc.remove(o); return url;
+  });
+  r2.dispose(); r2.forceContextLoss();
+  document.querySelectorAll('.shot').forEach((fig, i) => {
+    const ph = fig.querySelector('.ph'), cap = fig.querySelector('figcaption').textContent;
+    ph.innerHTML = `<img src="${urls[i % urls.length]}" alt="">`;
+    ph.setAttribute('aria-label', '3D render: ' + cap);
+  });
+}
+
+function allLoaded() {
+  setPart('body', build.body, true); setPart('head', build.head, true); setPart('arms', build.arms, true);
+  try { renderGallery(); } catch (err) { /* keep the drawn placeholders if rendering fails */ }
+}
+
+/* =========================================================
+   H. CAMERA KEYFRAMES: hero, then one per feature
+   ========================================================= */
+const KF = [
+  { cam: [0, 0.4, 7.2], look: [0, 0.2, 0], x: 0 },
+  { cam: [2.8, 0.9, 5.6], look: [0, 0.3, 0], x: 1.2 },   // 1: waves (card left, toy right)
+  { cam: [0.2, 0.2, 4.6], look: [0, 0.1, 0], x: -1.0 },  // 2: glow (close front)
+  { cam: [-2.6, 2.6, 5.4], look: [0, 0.7, 0], x: 1.2 },  // 3: pop (from above)
+];
+const tour = document.getElementById('tour'), cta = document.getElementById('cta'), hero = document.getElementById('top'), buildSec = document.getElementById('build');
+const camPos = new THREE.Vector3(...KF[0].cam), camLook = new THREE.Vector3(...KF[0].look);
+const featureOn = [false, false, false]; let ctaCheered = false;
+
+// Blink: eyes close for a moment every few seconds (each eye group squashes on Y)
+function blink(eyes, t, seed) {
+  const period = 3.4 + seed * .7, phase = (t + seed * 1.3) % period;
+  const closed = !REDUCED && phase < .13;
+  eyes.forEach(e => { e.scale.y = closed ? .1 : 1; });
+}
+
+/* =========================================================
+   I. RENDER LOOP: scroll position drives the camera and every animation
+   ========================================================= */
+let last = now(), lowTime = 0, fpsAvg = 60;
+function frame() {
+  requestAnimationFrame(frame);
+  const vh = innerHeight, t = now(), dt = Math.min(.1, t - last); last = t;
+
+  // Skip rendering while solid sections cover the whole canvas
+  const visible = [hero, tour, buildSec, cta].some(el => { const r = el.getBoundingClientRect(); return r.bottom > 0 && r.top < vh; });
+  if (!visible) return;
+
+  // Auto quality: below ~40fps for 2 seconds -> lower pixel ratio and switch off the rim light
+  fpsAvg = lerp(fpsAvg, 1 / Math.max(dt, .001), .05);
+  lowTime = fpsAvg < 40 ? lowTime + dt : 0;
+  if (lowTime > 2 && !lowQuality) { lowQuality = true; maxPR = 1; rim.visible = false; resize(); }
+
+  // stepVal: 0 = hero, 1..3 = feature cards centred on screen
+  const tr = tour.getBoundingClientRect();
+  const stepVal = clamp((vh / 2 - tr.top) / vh + .5, 0, 3);
+  const i0 = Math.floor(stepVal), i1 = Math.min(3, i0 + 1);
+  const f = smooth(clamp((stepVal - i0 - .2) / .6)); // hold on each feature, then glide
+  const a = KF[i0], b = KF[i1];
+  let cam = lerp3(a.cam, b.cam, f), look = lerp3(a.look, b.look, f), offX = lerp(a.x, b.x, f), offY = 0;
+  let heroScale = 1;
+  if (mobile()) { // phones: smaller toy, higher up, so the text has its own space
+    offX = 0; offY = lerp(1.05, 1.1, clamp(stepVal)); heroScale = lerp(.72, .8, clamp(stepVal));
+    cam = [cam[0] * 1.3, cam[1], cam[2] * lerp(1.35, 1.9, clamp(stepVal))];
+  }
+
+  // CTA weight: all three toys line up and do a celebration spin
+  const cr = cta.getBoundingClientRect();
+  const c = smooth(clamp((vh - cr.top) / (vh * .9)));
+  cam = lerp3(cam, [0, 0.6, mobile() ? 15 : 9.5], c);
+  look = lerp3(look, [0, mobile() ? -1.6 : -0.9, 0], c);
+  if (c > .6 && !ctaCheered) { ctaCheered = true; play('whoosh'); } else if (c < .2) ctaCheered = false;
+
+  // Builder weight: how much of the screen the builder section fills
+  const br = buildSec.getBoundingClientRect();
+  const bw = smooth(clamp(((Math.min(br.bottom, vh) - Math.max(br.top, 0)) / Math.min(vh, br.height)) * 1.6 - .5));
+  controls.enabled = bw > .5;
+  if (bw > 0) { controls.update(); cam = lerp3(cam, builderCam.position.toArray(), bw); look = lerp3(look, controls.target.toArray(), bw); }
+
+  camPos.lerp(new THREE.Vector3(...cam), .1 + .5 * bw); camLook.lerp(new THREE.Vector3(...look), .1 + .5 * bw);
+  camera.position.copy(camPos); camera.lookAt(camLook);
+
+  // In the builder, shift the view so the toy sits in the middle of the drag area
+  if (bw > .001) {
+    const dr = dragEl.getBoundingClientRect();
+    camera.setViewOffset(innerWidth, vh, (innerWidth / 2 - (dr.left + dr.width / 2)) * bw, (vh / 2 - (dr.top + dr.height / 2)) * bw, innerWidth, vh);
+  } else if (camera.view && camera.view.enabled) camera.clearViewOffset();
+
+  // feature weights: 1 when that feature's card is centred (faded out at the CTA and builder)
+  const w = [1, 2, 3].map(k => clamp(1 - Math.abs(stepVal - k)) * (1 - c) * (1 - bw));
+  w.forEach((v, k) => { // one sound as each feature comes into focus
+    if (v > .7 && !featureOn[k]) { featureOn[k] = true; play(['pop', 'chime', 'pop'][k]); }
+    else if (v < .3) featureOn[k] = false;
+  });
+
+  // idle spin starts facing the viewer and unwinds back to the front during the tour
+  let idle = ((t - idleStart) * .35) % (Math.PI * 2); if (idle > Math.PI) idle -= Math.PI * 2;
+  idle = REDUCED || !finished ? 0 : idle * (1 - clamp(stepVal));
+
+  holders.forEach((h, i) => {
+    const s = toyState[i], p = s.parts, sel = selection(s, i === current, t);
+    const S = lerp(sel.scale * heroScale, .85, c) * (1 - bw);
+    const sy = sel.sq, sx = 1 / Math.sqrt(sy);
+    h.scale.set(Math.max(1e-4, S * sx), Math.max(1e-4, S * sy), Math.max(1e-4, S * sx));
+    h.visible = S > .01;
+    if (!h.visible) return;
+
+    // hop when clicked
+    const he = t - s.hopT, hop = he < .7 ? Math.sin(Math.PI * he / .7) * .6 : 0;
+    const wiggle = he < .7 ? Math.sin(he * 28) * .18 * (1 - he / .7) : 0;
+
+    const slot = (i - 1) * (mobile() ? 1.85 : 2.6);
+    h.position.x = lerp(i === current ? offX : 0, slot, c);
+    h.position.y = (offY + sel.y) * (1 - c) + hop + (REDUCED ? 0 : Math.sin(t * 1.6 + i) * .08);
+    h.rotation.y = idle + mouse.x * .5 + c * Math.PI * 2 + sel.spin;
+    h.rotation.x = mouse.y * .25;
+    h.rotation.z = wiggle;
+
+    // Feature 1: wave arms / ears / fins
+    const wave = REDUCED ? 0 : Math.sin(t * 7) * .6 * w[0] + (c > .5 ? Math.sin(t * 9) * .4 * c : 0);
+    if (p.armL) p.armL.rotation.z = -wave - .15 * w[0];
+    if (p.armR) p.armR.rotation.z = wave + .15 * w[0];
+    // Feature 2: gentle glow that keeps the part's own colour
+    if (p.glow) p.glow.material.emissiveIntensity = p.glowBase + w[1] * (REDUCED ? .5 : .45 + Math.sin(t * 4) * .2);
+    // Feature 3: head / nose pops up and twists
+    if (p.pop) { p.pop.position.y = p.popY + w[2] * .55; p.pop.rotation.y = w[2] * Math.PI * .5; }
+    if (p.eyes) blink(p.eyes, t, i);
+  });
+
+  // Builder toy: grows in with the section, parts bounce in when swapped, arms sway
+  builder.visible = bw > .01;
+  if (builder.visible) {
+    builder.scale.setScalar(Math.max(1e-4, bw * (mobile() ? .8 : 1)));
+    const he = t - builderHopT;
+    builder.position.y = -.25 + (he < .7 ? Math.sin(Math.PI * he / .7) * .6 : 0) + (REDUCED ? 0 : Math.sin(t * 1.6) * .06);
+    builder.rotation.z = he < .7 ? Math.sin(he * 28) * .18 * (1 - he / .7) : 0;
+    Object.values(slots).forEach(sl => {
+      const e = t - (sl.userData.t0 || -10);
+      sl.scale.setScalar(REDUCED || e > .5 ? 1 : Math.max(1e-4, easeOutBack(clamp(e / .5))));
+    });
+    const sway = REDUCED ? 0 : Math.sin(t * 3) * .25;
+    slots.armL.rotation.z = (slots.armL.userData.tilt || 0) - sway;
+    slots.armR.rotation.z = (slots.armR.userData.tilt || 0) + sway;
+    blink(builderEyes, t, 3);
+  }
+
+  renderer.render(scene, camera);
+}
+frame();
+</script>
+
+</body>
+</html>
